@@ -5,10 +5,18 @@ include: "/views/**/*.view"
 
 datagroup: ga_sample_default_datagroup {
   # sql_trigger: SELECT MAX(id) FROM etl_log;;
-  max_cache_age: "1 hour"
+  max_cache_age: "24 hours"
 }
 
 persist_with: ga_sample_default_datagroup
+
+named_value_format: hour_format {
+  value_format: "[h]:mm:ss"
+}
+
+named_value_format: formatted_number {
+  value_format:"[<1000]0;[<1000000]0.0,\"K\";0.0,,\"M\""
+}
 
 explore: ga_sessions {
   join: ga_sessions__hits {
