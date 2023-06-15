@@ -514,6 +514,7 @@ view: ga_sessions {
   }
 
   dimension: visit_start_time {
+    hidden: yes
     type: number
     sql: ${TABLE}.visitStartTime ;;
   }
@@ -546,6 +547,44 @@ view: ga_sessions {
     hidden: yes
     sql: ${TABLE}.totals.timeonsite ;;
   }
+
+  dimension_group: visit_start {
+    # Dimension(s) are labeled with 'Visit' to match column names in database, but relabeled in Explore to match most recent Google Analytics nomenclature (i.e. 'Session' rather than 'Visit')
+    label: "Session Start"
+    # description: "Timestamp of the start of the Session. References visitStartTime field. Can differ from 'Date' field based on timezone."
+    type: time
+    timeframes: [
+      raw,
+      hour_of_day,
+      date,
+      day_of_week,
+      day_of_week_index,
+      day_of_month,
+      day_of_year,
+      fiscal_quarter,
+      fiscal_quarter_of_year,
+      week,
+      month,
+      month_name,
+      month_num,
+      quarter,
+      quarter_of_year,
+      week_of_year,
+      year
+    ]
+    sql: TIMESTAMP_SECONDS(${TABLE}.visitStarttime);;
+    convert_tz: no
+  }
+
+  dimension: time_on_site_tier {
+    label: "Session Duration Tiers"
+    # description: "The length (returned as a string) of a session measured in seconds and reported in second increments."
+    type: tier
+    sql: ${time_on_site} ;;
+    tiers: [10,30,60,120,180,240,300,600]
+    style: integer
+  }
+
 
 
 
