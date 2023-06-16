@@ -596,7 +596,7 @@ view: ga_sessions {
   }
 
   measure: visits_total {
-    # group_label: "Sessions"
+    group_label: "Session"
     label: "Sessions"
     # description: "Session-level rollup of Sessions."
     type: sum
@@ -609,7 +609,7 @@ view: ga_sessions {
 
   measure: percent_new_sessions {
     # view_label: "Session"
-    # group_label: "Session"
+    group_label: "Session"
     label: "% New Sessions"
     # description: "The percentage of sessions by users who had never visited the property before."
     type: number
@@ -620,7 +620,7 @@ view: ga_sessions {
   }
 
   measure: first_time_sessions {
-    # group_label: "Session"
+    group_label: "Session"
     label: "New Sessions"
     # description: "The total number of sessions for the requested time period where the visitNumber equals 1."
     type: count_distinct
@@ -638,7 +638,7 @@ view: ga_sessions {
   }
 
   measure: bounces_total {
-    # group_label: "Session"
+    group_label: "Session"
     label: "Bounces"
     type: sum
     sql: ${TABLE}.totals.bounces ;;
@@ -647,7 +647,7 @@ view: ga_sessions {
   }
 
   measure: bounce_rate {
-    # group_label: "Session"
+    group_label: "Session"
     type:  number
     sql: 1.0 * ${bounces_total} / NULLIF(${visits_total},0) ;;
 
@@ -655,7 +655,7 @@ view: ga_sessions {
   }
 
   measure: timeonsite_total_formatted {
-    # group_label: "Session"
+    group_label: "Session"
     label: "Time On Site"
     # description: "Total duration of users' sessions."
     type: sum
@@ -665,12 +665,56 @@ view: ga_sessions {
   }
 
   measure: timeonsite_average_per_session {
-    # group_label: "Session"
+    group_label: "Session"
     label: "Avg. Session Duration"
     # description: "Total duration of users' sessions."
     type: number
     sql: (${timeonsite_total_formatted} / NULLIF(${visits_total},0));;
 
     value_format_name: hour_format
+  }
+
+  measure: unique_visitors {
+    # view_label: "Audience"
+    group_label: "User"
+    label: "Users"
+    # description: "The total number of users for the requested time period."
+    type: count_distinct
+    allow_approximate_optimization: yes
+    sql: ${full_visitor_id} ;;
+
+    value_format_name: formatted_number
+    drill_fields: [client_id, account.id, visit_number]
+    # drill_fields: [client_id, account.id, visit_number, hits_total, page_views_total, time_on_site_total]
+  }
+
+  measure: returning_visitors {
+    # view_label: "Audience"
+    group_label: "User"
+    label: "Returning Users"
+    # description: "The total number of users for the requested time period where the visitNumber is not 1."
+    type: count_distinct
+    allow_approximate_optimization: yes
+    sql: ${full_visitor_id};;
+
+    filters: {
+      field: visit_number
+      value: "<> 1"
+    }
+
+    value_format_name: formatted_number
+    # drill_fields: [source_medium, returning_visitors]
+  }
+
+  measure: percent_returning_visitors {
+    # view_label: "Audience"
+    group_label: "User"
+    label: "% Returning Users"
+    # description: "The total number of users for the requested time period where the visitNumber is not 1."
+    type: number
+    sql: ${returning_visitors} / ${unique_visitors};;
+
+    value_format_name: percent_1
+    # drill_fields: [source_medium, returning_visitors]
   }
 }
