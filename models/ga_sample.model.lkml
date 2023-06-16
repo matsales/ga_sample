@@ -18,7 +18,15 @@ named_value_format: formatted_number {
   value_format:"[<1000]0;[<1000000]0.0,\"K\";0.0,,\"M\""
 }
 
+
 explore: ga_sessions {
+
+  join: audience_cohorts {
+    type: left_outer
+    sql_on: ${ga_sessions.audience_trait} = ${audience_cohorts.audience_trait} ;;
+    relationship: many_to_one
+  }
+
   join: ga_sessions__hits {
     view_label: "Ga Sessions: Hits"
     sql: LEFT JOIN UNNEST(${ga_sessions.hits}) as ga_sessions__hits ;;

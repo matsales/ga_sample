@@ -37,7 +37,10 @@ view: ga_sessions {
   }
 
   dimension: channel_grouping {
-    type: string
+    # view_label: "Acquisition"
+    group_label: "Traffic Sources"
+    label: "Default Channel"
+    # description: "The Channel Group associated with an end user's session for this View (defined by the View's Channel Groupings)."
     sql: ${TABLE}.channelGrouping ;;
   }
 
@@ -529,7 +532,7 @@ view: ga_sessions {
   ### NEW DIMENSIONS
 
   dimension: id {
-    # primary_key: yes
+    primary_key: yes
     label: "User/Session ID"
     # group_label: "ID"
     # description: "Unique ID for Session: Full User ID | Session ID | Session Start Date"
@@ -585,6 +588,118 @@ view: ga_sessions {
     style: integer
   }
 
+  dimension: continent {
+    # view_label: "Audience"
+    group_label: "Geo"
+    # description: "Users' continent, derived from users' IP addresses or Geographical IDs."
+    sql: ${TABLE}.geoNetwork.continent ;;
+    drill_fields: [subcontinent,country,region,city]
+    # drill_fields: [subcontinent,country,region,city,metro,approximate_networkLocation,networkLocation]
+  }
+
+  dimension: subcontinent {
+    # view_label: "Audience"
+    group_label: "Geo"
+    # description: "Users' sub-continent, derived from their IP addresses or Geographical IDs. For example, Polynesia or Northern Europe."
+    sql: ${TABLE}.geoNetwork.subcontinent ;;
+    drill_fields: [country,region,city]
+    # drill_fields: [country,region,city,metro,approximate_networkLocation,networkLocation]
+  }
+
+  dimension: country {
+    # view_label: "Audience"
+    group_label: "Geo"
+    # description: "Users' country, derived from their IP addresses or Geographical IDs."
+    # map_layer_name: countries
+    sql: ${TABLE}.geoNetwork.country ;;
+    drill_fields: [region,city]
+    # drill_fields: [region,metro,city,approximate_networkLocation,networkLocation]
+  }
+
+  dimension: region {
+    # view_label: "Audience"
+    group_label: "Geo"
+    # description: "Users' region, derived from their IP addresses or Geographical IDs. In U.S., a region is a state, New York, for example."
+    # map_layer_name: us_states
+    sql: ${TABLE}.geoNetwork.region ;;
+    drill_fields: [city]
+    # drill_fields: [metro,city,approximate_networkLocation,networkLocation]
+  }
+
+  dimension: city {
+    # view_label: "Audience"
+    group_label: "Geo"
+    # description: "Users' city, derived from their IP addresses or Geographical IDs."
+    sql: ${TABLE}.geoNetwork.city ;;
+    # drill_fields: [metro,approximate_networkLocation,networkLocation]
+  }
+
+  dimension: audience_trait {
+    # view_label: "Audience"
+    group_label: "Audience Cohorts"
+    # description: "Dynamic cohort field based on value set in 'Audience Selector' filter."
+    type: string
+    sql: CASE
+              WHEN {% parameter audience_selector %} = 'Channel' THEN ${channel_grouping}
+              WHEN {% parameter audience_selector %} = 'Medium' THEN ${traffic_source__medium}
+              WHEN {% parameter audience_selector %} = 'Source' THEN ${traffic_source__source}
+              WHEN {% parameter audience_selector %} = 'Source Medium' THEN ${traffic_source__medium}
+              WHEN {% parameter audience_selector %} = 'Device' THEN ${device__device_category}
+              WHEN {% parameter audience_selector %} = 'Browser' THEN ${device__browser}
+              WHEN {% parameter audience_selector %} = 'Metro' THEN ${geo_network__metro}
+              WHEN {% parameter audience_selector %} = 'Country' THEN ${country}
+              WHEN {% parameter audience_selector %} = 'Continent' THEN ${continent}
+              WHEN {% parameter audience_selector %} = 'Language' THEN ${device__language}
+              WHEN {% parameter audience_selector %} = 'Operating System' THEN ${device__operating_system}
+        END;;
+  }
+
+  dimension: source {
+    # view_label: "Acquisition"
+    group_label: "Traffic Sources"
+    # description: "The source of the traffic source. Could be the name of the search engine, the referring hostname, or a value of the utm_source URL parameter."
+    type: string
+    sql: ${TABLE}.trafficsource.source ;;
+
+    # drill_fields: [ad_content, campaign, keyword, source_medium]
+  }
+
+  dimension: medium {
+    # view_label: "Acquisition"
+    group_label: "Traffic Sources"
+    # description: "The medium of the traffic source. Could be 'organic', 'cpc', 'referral', or the value of the utm_medium URL parameter."
+    type: string
+    sql: ${TABLE}.trafficsource.medium ;;
+
+    # drill_fields: [ad_content, campaign, keyword, source, source_medium]
+  }
+
+  dimension: landing_page {
+    # view_label: "Behavior"
+    # group_label: "Pages (with Parameters)"
+    group_label: "Pages"
+    label: "Landing Page (with Parameters)"
+    # description: "Landing page for session."
+    sql: (
+          SELECT
+            MAX(
+              CASE
+                WHEN hits.isEntrance AND hits.type = 'PAGE'
+                  THEN hits.page.pagePath
+              END
+            ) as lp
+          FROM UNNEST(${TABLE}.hits) as hits
+        ) ;;
+  }
+
+  dimension: landing_page_formatted {
+    # view_label: "Behavior"
+    group_label: "Pages"
+    label: "Landing Page"
+    # description: "Landing page for session without url parameters."
+    type: string
+    sql: SPLIT(${landing_page}, '?')[OFFSET(0)];;
+  }
 
 
 
@@ -716,5 +831,50 @@ view: ga_sessions {
 
     value_format_name: percent_1
     # drill_fields: [source_medium, returning_visitors]
+  }
+
+
+
+  ### PARAMETERS
+
+  parameter: audience_selector {
+    # view_label: "Audience"
+    # description: "Use to set 'Audience Trait' field to dynamically choose a user cohort."
+    type: string
+    allowed_value: {
+      value: "Device"
+    }
+    allowed_value: {
+      value: "Operating System"
+    }
+    allowed_value: {
+      value: "Browser"
+    }
+
+    allowed_value: {
+      value: "Country"
+    }
+    allowed_value: {
+      value: "Continent"
+    }
+    allowed_value: {
+      value: "Metro"
+    }
+    allowed_value: {
+      value: "Language"
+    }
+
+    allowed_value: {
+      value: "Channel"
+    }
+    allowed_value: {
+      value: "Medium"
+    }
+    allowed_value: {
+      value: "Source"
+    }
+    allowed_value: {
+      value: "Source Medium"
+    }
   }
 }
