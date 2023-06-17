@@ -1,4 +1,4 @@
-connection: "google_analytics_sample"
+connection: "@{connection}"
 
 # include all the views
 include: "/views/**/*.view"
