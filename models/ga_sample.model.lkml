@@ -3,6 +3,9 @@ connection: "google_analytics_sample"
 # include all the views
 include: "/views/**/*.view"
 
+# include all the dashboards
+include: "/dashboards/*.dashboard.lookml"
+
 datagroup: ga_sample_default_datagroup {
   # sql_trigger: SELECT MAX(id) FROM etl_log;;
   max_cache_age: "24 hours"
